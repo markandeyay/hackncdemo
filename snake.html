@@ -6,29 +6,31 @@
 <title>Snake</title>
 <style>
   :root {
-    --lcd-bg: #9bbc0f;
-    --lcd-light: #8bac0f;
-    --lcd-dark: #306230;
-    --lcd-darkest: #0f380f;
-    --body: #3a3f2a;
+    --void: #0d0221;
+    --panel: #1a0533;
+    --board: #12032a;
+    --purple: #b026ff;
+    --pink: #ff2bd6;
+    --pink-soft: #ff9cf0;
+    --lavender: #e0aaff;
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
   body {
-    background: var(--body);
+    background: radial-gradient(circle at 50% 30%, #2a0a4d 0%, var(--void) 70%);
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: "Courier New", Courier, monospace;
-    color: var(--lcd-darkest);
+    color: var(--lavender);
     padding: 16px;
   }
   .device {
-    background: var(--lcd-bg);
-    border: 6px solid var(--lcd-darkest);
+    background: var(--panel);
+    border: 3px solid var(--purple);
     border-radius: 12px;
     padding: 12px;
-    box-shadow: 0 0 0 4px #1f2417, 0 12px 30px rgba(0,0,0,.5);
+    box-shadow: 0 0 12px var(--purple), 0 0 40px rgba(176, 38, 255, .45), inset 0 0 20px rgba(176, 38, 255, .25);
     width: min(92vw, 460px);
   }
   .hud {
@@ -39,16 +41,19 @@
     letter-spacing: 1px;
     text-transform: uppercase;
     padding: 4px 6px 10px;
-    border-bottom: 3px solid var(--lcd-darkest);
+    border-bottom: 2px solid var(--pink);
     margin-bottom: 10px;
+    color: var(--pink-soft);
+    text-shadow: 0 0 8px var(--pink);
   }
   .board-wrap { position: relative; }
   canvas {
     display: block;
     width: 100%;
     aspect-ratio: 1 / 1;
-    background: var(--lcd-light);
-    border: 3px solid var(--lcd-darkest);
+    background: var(--board);
+    border: 3px solid var(--pink);
+    box-shadow: 0 0 12px var(--pink), inset 0 0 16px rgba(255, 43, 214, .25);
     image-rendering: pixelated;
   }
   .overlay {
@@ -59,14 +64,20 @@
     align-items: center;
     justify-content: center;
     text-align: center;
-    background: rgba(155, 188, 15, .85);
+    background: rgba(13, 2, 33, .88);
     gap: 8px;
     text-transform: uppercase;
   }
   .overlay.hidden { display: none; }
-  .overlay h1 { margin: 0; font-size: clamp(22px, 7vw, 36px); letter-spacing: 3px; }
-  .overlay p { margin: 0; font-size: clamp(11px, 3vw, 14px); }
-  .blink { animation: blink 1s steps(2, start) infinite; }
+  .overlay h1 {
+    margin: 0;
+    font-size: clamp(22px, 7vw, 36px);
+    letter-spacing: 3px;
+    color: var(--pink);
+    text-shadow: 0 0 10px var(--pink), 0 0 24px var(--purple);
+  }
+  .overlay p { margin: 0; font-size: clamp(11px, 3vw, 14px); color: var(--lavender); }
+  .blink { animation: blink 1s steps(2, start) infinite; color: var(--pink-soft) !important; }
   @keyframes blink { to { visibility: hidden; } }
   .controls {
     display: flex;
@@ -79,15 +90,17 @@
     font-weight: bold;
     text-transform: uppercase;
     letter-spacing: 1px;
-    background: var(--lcd-darkest);
-    color: var(--lcd-bg);
-    border: none;
+    background: transparent;
+    color: var(--pink-soft);
+    border: 2px solid var(--purple);
     padding: 8px 16px;
     cursor: pointer;
     border-radius: 4px;
+    box-shadow: 0 0 8px rgba(176, 38, 255, .6);
+    text-shadow: 0 0 6px var(--pink);
   }
-  button:hover { background: var(--lcd-dark); }
-  button:focus-visible { outline: 3px solid var(--lcd-dark); outline-offset: 2px; }
+  button:hover { background: var(--purple); color: var(--void); text-shadow: none; }
+  button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
 </style>
 </head>
 <body>
@@ -122,9 +135,11 @@
   var FOODS_PER_LEVEL = 5;
   var STORAGE_KEY = "snake-best-score";
 
-  var C_BG = "#8bac0f";
-  var C_DARK = "#0f380f";
-  var C_MID = "#306230";
+  var C_BG = "#12032a";
+  var C_GRID = "rgba(176, 38, 255, 0.10)";
+  var C_HEAD = "#ff2bd6";
+  var C_BODY = "#b026ff";
+  var C_FOOD = "#ff9cf0";
 
   var canvas = document.getElementById("board");
   var ctx = canvas.getContext("2d");
@@ -268,21 +283,36 @@
   }
 
   function draw() {
+    ctx.shadowBlur = 0;
     ctx.fillStyle = C_BG;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Faint neon grid lines.
+    ctx.fillStyle = C_GRID;
+    for (var g = 1; g < GRID; g++) {
+      ctx.fillRect(g * CELL, 0, 1, canvas.height);
+      ctx.fillRect(0, g * CELL, canvas.width, 1);
+    }
+
+    ctx.shadowBlur = 12;
 
     if (food) {
       // Plus-shaped pixel food, distinct from the snake's square blocks.
       var fx = food.x * CELL, fy = food.y * CELL;
-      ctx.fillStyle = C_DARK;
+      ctx.shadowColor = C_FOOD;
+      ctx.fillStyle = C_FOOD;
       ctx.fillRect(fx + 7, fy + 2, 6, 16);
       ctx.fillRect(fx + 2, fy + 7, 16, 6);
     }
 
     snake.forEach(function (s, i) {
-      drawCell(s.x, s.y, i === 0 ? C_DARK : C_MID);
+      var c = i === 0 ? C_HEAD : C_BODY;
+      ctx.shadowColor = c;
+      drawCell(s.x, s.y, c);
     });
-    // Inner highlight on body segments for the chunky LCD look.
+
+    // Dark inner core on body segments for a hollow neon-tube look.
+    ctx.shadowBlur = 0;
     ctx.fillStyle = C_BG;
     for (var i = 1; i < snake.length; i++) {
       ctx.fillRect(snake[i].x * CELL + 6, snake[i].y * CELL + 6, 8, 8);
